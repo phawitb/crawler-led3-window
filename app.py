@@ -237,7 +237,7 @@ def main():
 
             map = create_map(dfs)
             # map.get_root().html.add_child(folium.Element('<style>#map-container { height: 100vh !important; width: 100% !important; }</style>'))
-            m = folium_static(map,height=1000, width=1800)
+            m = folium_static(map,height=1000, width=1600)
 
         if st.sidebar.button('🏠 Order-ID'):
             st.session_state["stage"] = 2
@@ -249,7 +249,7 @@ def main():
         # tab1, tab2 = st.tabs(["Map", "Order-ID"])
         if st.session_state["stage"] == 2:
             col1, col2 = st.columns([3,2])
-            b1, b2 = col1.columns([1,6])
+            b1, b2 = col1.columns([1,5])
             if st.session_state["df"].shape[0] > 0:
                 with b1:
                     if st.button('⬅️ Previous'):
@@ -288,10 +288,10 @@ def main():
 
                 col111, col112 = col1.columns(2)
                 with col111:
-                    st.image(r['img0'], width = 400)
+                    st.image(r['img0'], width = 300)
 
                 with col112:
-                    st.image(r['img1'], width = 400)
+                    st.image(r['img1'], width = 300)
 
                 with col2:
                     map2 = folium.Map(location=[r['lat'], r['lon']], zoom_start=16)
