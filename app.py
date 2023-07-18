@@ -237,7 +237,7 @@ def main():
 
             map = create_map(dfs)
             # map.get_root().html.add_child(folium.Element('<style>#map-container { height: 100vh !important; width: 100% !important; }</style>'))
-            m = folium_static(map,height=1000, width=1600)
+            m = folium_static(map,height=1000, width=1200)
 
         if st.sidebar.button('🏠 Order-ID'):
             st.session_state["stage"] = 2
