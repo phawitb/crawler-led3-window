@@ -5,7 +5,7 @@ import pandas as pd
 import requests
 import io
 from streamlit_folium import st_folium
-from datetime import datetime
+from datetime import datetime,timedelta
 
 
 
@@ -22,6 +22,8 @@ if "df" not in st.session_state:
     st.session_state["df"] = pd.DataFrame()
 if "stage" not in st.session_state:
     st.session_state["stage"] = 0
+if "hellow_msg" not in st.session_state:
+    st.session_state["hellow_msg"] = '⬅️ open sidebar for find'
 
 def get_pos(lat,lng):
     return lat,lng
@@ -165,41 +167,59 @@ def filter_df(df,selected_province,selected_aumpher,selected_min,selected_max,se
     #filter df
     if not selected_aumpher:
         selected_aumpher = list(df['aumper'].unique())
-    selected_date = selected_date.replace('/','')
+
+    selected_date = [x.replace('/','') for x in selected_date]
+    # selected_date = selected_date.replace('/','')
     dfs = filter_equal(df,'aumper',selected_aumpher)
     dfs = filter_range(dfs,'max_price',strprice2int(selected_min),strprice2int(selected_max))
     dfs = filter_equal(dfs,'type',T)
-    if selected_date != 'All Date':
-        matchDate = []
-        for index, row in dfs.iterrows():
-            if selected_date in eval(row['bid_dates']):
-                matchDate.append(True)
-            else:
-                matchDate.append(False)
-        dfs['matchDate'] = matchDate
-    else:
-        dfs['matchDate'] = True
+
+    # selected_date
+
+
+    matchDate = []
+    for index, row in dfs.iterrows():
+        if set(selected_date).intersection(eval(row['bid_dates'])):
+            matchDate.append(True)
+        else:
+            matchDate.append(False)
+    dfs['matchDate'] = matchDate
+
     dfs = dfs[dfs['matchDate'] == True]
+
+
+
+    # if selected_date != 'All Date':
+    #     matchDate = []
+    #     for index, row in dfs.iterrows():
+    #         if selected_date in eval(row['bid_dates']):
+    #             matchDate.append(True)
+    #         else:
+    #             matchDate.append(False)
+    #     dfs['matchDate'] = matchDate
+    # else:
+    #     dfs['matchDate'] = True
+    # dfs = dfs[dfs['matchDate'] == True]
     return dfs
 
 def main():
     
-    
     st.set_page_config(layout="wide")
-    st.markdown(
-    """
-    <style>
-    .css-1aumxhk {
-        padding: 0;
-        border: none;
-        box-shadow: none;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-    )
+    # st.markdown(
+    # """
+    # <style>
+    # .css-1aumxhk {
+    #     padding: 0;
+    #     border: none;
+    #     box-shadow: none;
+    # }
+    # </style>
+    # """,
+    # unsafe_allow_html=True
+    # )
 
     st.sidebar.header("Find")
+    st.markdown(st.session_state["hellow_msg"])
     selected_province = st.sidebar.selectbox('Province',['Select Province','nonthaburi', 'bangkok'])
     if selected_province != 'Select Province':
         df = get_data(selected_province)
@@ -213,8 +233,51 @@ def main():
             if str(i) != 'nan':
                 all_date = all_date+eval(i)
         all_date = set(all_date)
-        all_date = ['All Date'] + [datetime.strptime(x, '%Y%m%d').strftime('%Y/%m/%d') for x in all_date]
-        selected_date = st.sidebar.selectbox('Date',all_date)
+        # all_date = ['All Date'] + [datetime.strptime(x, '%Y%m%d').strftime('%Y/%m/%d') for x in all_date]
+        # selected_date = st.sidebar.selectbox('Date',all_date)
+
+        rd = st.sidebar.date_input("Date",[datetime.now(),datetime.now()+timedelta(days=365)])
+        start_date = datetime.now(),datetime.now()
+        end_date = datetime.now(),datetime.now()
+        if len(list(rd)) == 1:
+            start_date = rd[0]
+            end_date = rd[0]+timedelta(days=1)
+        else:
+            start_date = rd[0]
+            end_date = rd[1]
+        # print('start_date,end_date',start_date.strftime('%Y%m%d'),end_date.strftime('%Y/%m/%d'))
+        # start_date.strftime('%Y/%m/%d'),end_date.strftime('%Y/%m/%d')
+        # all_date
+
+        all_date = [datetime.strptime(x,'%Y%m%d') for x in all_date]
+        # start_date,end_date
+
+        D = []
+        d = start_date
+        while d != end_date:
+            D.append(d)
+            d = d+timedelta(days=1)
+
+        all_date = [x.date() for x in all_date]
+
+        # 'all_date',all_date
+        # 'D',D
+        # D
+        selected_date = [x.strftime('%Y/%m/%d') for x in set(D).intersection(set(all_date))]
+
+
+
+#         current_date = datetime.now()
+
+# # Calculate the date for tomorrow
+# tomorrow_date = current_date + timedelta(days=1)
+
+
+
+
+        # st.write('Your birthday is:', d)
+
+
 
 
         # L = list(df['type'].unique())
@@ -231,6 +294,7 @@ def main():
         print('types',types)
         # selected_date = st.sidebar.selectbox('Date',('all', '06/06/2023', '09/06/2023','12/06/2023'))
         if st.sidebar.button('🌎 Map'):
+            st.session_state["hellow_msg"] = '🌎 Map'
             st.session_state["stage"] = 1
             dfs = filter_df(df,selected_province,selected_aumpher,selected_min,selected_max,selected_date,types,size_min, size_max)
 
@@ -240,6 +304,7 @@ def main():
             m = folium_static(map,height=1000, width=1200)
 
         if st.sidebar.button('🏠 Order-ID'):
+            st.session_state["hellow_msg"] = '🏠 Order-ID'
             st.session_state["stage"] = 2
             dfs = filter_df(df,selected_province,selected_aumpher,selected_min,selected_max,selected_date,types,size_min, size_max)
             dfs = dfs.reset_index(drop=True)
@@ -278,13 +343,21 @@ def main():
                     if r['size0'] != 0 or r['size2']>0 or r['size1']>0:
                         A += f"{r['size0']} ตร.ว."
 
-                    st.header(f"""# {st.session_state["current_id"]+1}/{st.session_state["df"].shape[0]}({r['sell_order']} {r['type']})""")
-                    st.subheader(f"{r['tumbon']},{r['aumper']},{r['province']}")
-                    st.subheader(f":red[{A}]")
-                    st.subheader(f"""นัด {int(r['bid_time'])} : {datetime.strptime(str(int(r['lastSta_date'])), "%Y%m%d").strftime("%d/%m/%Y")} {r['lastSta_detail']}""")
-                    st.subheader(f":{color}[{r['status']}]")
-                    st.subheader(f":{color}[วางเงิน {'{:,}'.format(int(r['pay_down']))}]")
-                    st.header(f"[:blue[฿ {'{:,}'.format(int(r['max_price']))}]]({r['link']})")
+                    # st.header(f"""# {st.session_state["current_id"]+1}/{st.session_state["df"].shape[0]}({r['sell_order']} {r['type']})""")
+                    # st.subheader(f"{r['tumbon']},{r['aumper']},{r['province']}")
+                    # st.subheader(f":red[{A}]")
+                    # st.subheader(f"""นัด {int(r['bid_time'])} : {datetime.strptime(str(int(r['lastSta_date'])), "%Y%m%d").strftime("%d/%m/%Y")} {r['lastSta_detail']}""")
+                    # st.subheader(f":{color}[{r['status']}]")
+                    # st.subheader(f":{color}[วางเงิน {'{:,}'.format(int(r['pay_down']))}]")
+                    # st.header(f"[:blue[฿ {'{:,}'.format(int(r['max_price']))}]]({r['link']})")
+
+                    st.markdown(f"""#### {st.session_state["current_id"]+1}/{st.session_state["df"].shape[0]}({r['sell_order']} {r['type']})""")
+                    st.markdown(f"{r['tumbon']},{r['aumper']},{r['province']}")
+                    st.markdown(f":red[{A}]")
+                    st.markdown(f"""นัด {int(r['bid_time'])} : {datetime.strptime(str(int(r['lastSta_date'])), "%Y%m%d").strftime("%d/%m/%Y")} {r['lastSta_detail']}""")
+                    st.markdown(f":{color}[{r['status']}]")
+                    st.markdown(f":{color}[วางเงิน {'{:,}'.format(int(r['pay_down']))}]")
+                    st.markdown(f"#### [:blue[฿ {'{:,}'.format(int(r['max_price']))}]]({r['link']})")
 
                 col111, col112 = col1.columns(2)
                 with col111:
@@ -320,5 +393,4 @@ def main():
 
 if __name__ == '__main__':
     main()
-
 
