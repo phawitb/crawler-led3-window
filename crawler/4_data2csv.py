@@ -41,7 +41,7 @@ DETAIL = {}
 for i,k in enumerate(data_combile.keys()):
 #     print(data_combile[k])
     D = {}
-    columns = ['sell_order','case_id','type','size0','size1','size2','tumbon','aumper','province','pay_down','status','max_price']
+    columns = ['sell_order','case_id','deed_number','type','size0','size1','size2','tumbon','aumper','province','pay_down','status','max_price']
     for c in columns:
         try:
             D[c] = data_combile[k]['data'][c]
