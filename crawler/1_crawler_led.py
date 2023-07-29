@@ -169,11 +169,19 @@ def detail_click(r,d):
     return url,D
     
 def row_crawled(current_page):
+
+    cc = []
+    for k in C[dtn].keys():
+        if C[dtn][k]:
+            cc.append(k)
+
     # current_page = 2
-    c = [int(x.split('/')[0]) for x in C[dtn].keys() if x.split('/')[1] == str(current_page)]
+    # c = [int(x.split('/')[0]) for x in C[dtn].keys() if x.split('/')[1] == str(current_page)]
+    c = [int(x.split('/')[0]) for x in cc if x.split('/')[1] == str(current_page)]
     c = set(c)
     # r_crawled = list(set(range(1,51)) - c)
     r_crawled = list(c.intersection(set(range(1,51))))
+    print(current_page,r_crawled)
     return r_crawled
 #-----------------------------------------
 print('start')
@@ -246,6 +254,8 @@ else:
 
 for p in range(1,max_page+1):
 
+    # print(CRAWLED[p])
+
     if len(CRAWLED[p]) != 50 or NEW_DATE:
         driver.switch_to.window(driver.window_handles[0])
         driver.get(f'https://asset.led.go.th/newbid-old/asset_search_province.asp?search_asset_type_id=&search_tumbol=&search_ampur=&search_province={search_province}&search_sub_province=&search_price_begin=&search_price_end=&search_bid_date=&page={p}')
@@ -265,7 +275,7 @@ for p in range(1,max_page+1):
             if r not in CRAWLED[p] or NEW_DATE:
                 try:
 
-                    print(r,'/',p,'-'*20)
+                    print(r,'/',p,'-'*20,C[dtn][f'{r}/{p}'])
                     #read exist data
                     try:
                         with open(f'../data/{province}_led.json', 'r') as openfile:

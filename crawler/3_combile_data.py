@@ -48,8 +48,15 @@ if READY:
 
     CB = {}
     for l in C[last_day_key].keys():
+        print('-'*20)
         page = l
+
+        # print('\n\nc',C[last_day_key].keys())
+        
         url = C[last_day_key][l]
+        print(l)
+        print(url)
+
         data = D[url]
 
         # data['gps_data'] = G

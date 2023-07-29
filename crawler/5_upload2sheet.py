@@ -32,13 +32,19 @@ for index, row in df.iterrows():
 df['lastSta_date'] = L_lastSta_date
 df['bid_dates'] = L_bid_dates
 
-df = df.replace(np.nan, None)
+# df = df.replace(np.nan, None)
+# df = df.fillna(None, inplace=True)
+
+df.replace([np.inf, -np.inf], np.nan, inplace=True)
+df.fillna('', inplace=True)
+
 
 #updode to sheet
 # data_list = df.values.tolist()
 data_list = [df.columns.tolist()] + df.values.tolist()
 
 L = ezsheets.listSpreadsheets()
+print('All sheet :',L)
 if f'led-data' in [L[x] for x in L]:
     print(f'led-data exist')
     spreadsheet = ezsheets.Spreadsheet(f'led-data')

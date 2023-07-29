@@ -6,9 +6,13 @@ force_updateDB = True
 
 #thaiprovince,utf8,pageGoogleSheet
 search_province = {
-    'bangkok' : ['กรุงเทพมหานคร','%A1%C3%D8%A7%E0%B7%BE%C1%CB%D2%B9%A4%C3',3],
     'nonthaburi' : ['นนทบุรี','%B9%B9%B7%BA%D8%C3%D5',1],
-    'nakhonpathom' : ['นครปฐม','%B9%A4%C3%BB%B0%C1',2]
+    'nakhonpathom' : ['นครปฐม','%B9%A4%C3%BB%B0%C1',2],
+    'samutsakorn' :['สมุทรสาคร','%CA%C1%D8%B7%C3%CA%D2%A4%C3',3],
+    'chonburi' : ['ชลบุรี','%AA%C5%BA%D8%C3%D5',4],
+    'songkhla' : ['สงขลา','%CA%A7%A2%C5%D2',5],
+    'bangkok' : ['กรุงเทพมหานคร','%A1%C3%D8%A7%E0%B7%BE%C1%CB%D2%B9%A4%C3',6]
+
 }
 
 dict_province = {0: 'กรุงเทพมหานคร', 1: 'กระบี่', 2: 'กาญจนบุรี', 3: 'กาฬสินธุ์', 4: 'กำแพงเพชร', 5: 'ขอนแก่น', 6: 'จันทบุรี', 7: 'ฉะเชิงเทรา', 8: 'ชลบุรี', 9: 'ชัยนาท', 
