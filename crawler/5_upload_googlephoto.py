@@ -10,10 +10,15 @@ import datetime
 import pytz
 import requests
 import base64
+import configure
 
 province = sys.argv[1]
 # province = 'nonthaburi'
-delete_day_before = 15 #day
+# delete_day_before = 15 #day
+delete_day_before = configure.google_photo_delete_days
+
+if not os.path.exists('photos'):
+    os.mkdir('photos')
 
 def split_list(lst,target):
     return [lst[i:i + target] for i in range(0, len(lst), target)]

@@ -4,6 +4,8 @@ chrome_headless = False
 
 force_updateDB = True
 
+google_photo_delete_days = 30
+
 #thaiprovince,utf8,pageGoogleSheet
 search_province = {
     'nonthaburi' : ['นนทบุรี','%B9%B9%B7%BA%D8%C3%D5',1],
