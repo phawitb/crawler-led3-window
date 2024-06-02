@@ -10,4 +10,9 @@ python 5_upload2sheet.py nonthaburi
 
 
 # Setting
-Task Scadualer > create basic task 
+## Set auto restart
+Task Scadualer > create basic task > set only restart  
+
+## Set run startup_python.bat when restart
+#### win+R >> shell:startup >> C:\Users\phawit\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup
+#### copy shortcut from C:\Users\phawit\Documents\crawler-led3-main\startup_python.bat
