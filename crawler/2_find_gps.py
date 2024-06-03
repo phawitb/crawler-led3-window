@@ -15,10 +15,31 @@ from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.service import Service
 import requests
+import re
+import pandas as pd
+from chromedriver_py import binary_path
 
 time.sleep(10)
 
 TOKEN_GROUP_ALL = '1hZqXJ1UwUlSD2eIIMjnobPb5PkoQIKT70Y0IR5SAzt'
+
+def link2deed(l):
+    print('l',l)
+    d = l.split('deed_no=')[1].split('&')[0]
+    print(d)
+    d = d.replace('%20',',')
+    d = d.replace('(',',')
+    d = d.replace('.',',')
+    d = d.split(',')
+    # d = [x.replace('%20','') for x in d]
+    d = [x.split('%')[0] for x in d]
+    d = [x.replace('(','') for x in d]
+    d = [x.split('-')[0] for x in d]
+    d = [x for x in d if x and len(x)>2]
+
+    d = [str(x) for x in d]
+
+    return d
 
 def line_noti(token,msg):
     url = 'https://notify-api.line.me/api/notify'
@@ -80,17 +101,13 @@ def find_gps(thai_province,aumper,deed_no):
                 data[l] = d
 
         return data
-    
-    # print('\n\n\nx',x)
-#     print('aumper',aumper)
-#     aums = [x for x in aumphers if aumper in x]
-#     print('aums',aums)
-    
-    # aumper = 'บางกรวย'
-#     aumper = 'บางกรวย (บางใหญ่)บางกรวย'
+
+    thai_province = configure.search_province[province][0]  #++++++++++++++++++++
 
     if thai_province == 'กรุงเทพฯ':
         thai_province = 'กรุงเทพมหานคร'
+    if 'เมือง' in aumper:
+        aumper = 'เมือง'
     if '(' in aumper:
         aumper = aumper.replace('(',' ').replace(')','').split()
     else:
@@ -108,6 +125,10 @@ def find_gps(thai_province,aumper,deed_no):
         aums += [x for x in aumphers[thai_province] if a in x]
     #     aums += 
     print('aums',aums)
+
+    input_list = aumphers[thai_province]
+    selected_elements = aums
+    aums = [x for x in selected_elements if x in input_list] + [x for x in input_list if x not in selected_elements]
 
     for aumper in aums:
         print(thai_province,aumper)
@@ -128,18 +149,6 @@ def find_gps(thai_province,aumper,deed_no):
             # pass
     return None
 
-def find_exist_gps(id):
-    try:
-        with open(f'../data/{province}_gps_data.json', 'r') as openfile:
-            gps_data = json.load(openfile)
-    except:
-        gps_data = {}
-
-    if id in gps_data.keys():
-        return gps_data[id]
-
-# province = 'nonthaburi'
-# find_exist_gps('30715')
 
 #---------------------------------------------------------------
 # province = 'nonthaburi'
@@ -156,7 +165,12 @@ if chrome_headless:
 # options.add_argument('window-size=800x600')
 options.add_argument('window-size=1920x1080')
 # driver = webdriver.Chrome(ChromeDriverManager(version=configure.chrome_version).install(),chrome_options=options)   #-----------------
-driver = webdriver.Chrome(service=Service(executable_path="chromedriver"), options=options)
+# driver = webdriver.Chrome(service=Service(executable_path="chromedriver"), options=options)
+
+svc = webdriver.ChromeService(executable_path=binary_path)
+driver = webdriver.Chrome(service=svc, options=options)
+
+
 # driver.maximize_window()
 print('driver.get_window_size()',driver.get_window_size())
 
@@ -174,69 +188,143 @@ except:
     pass
 
 
-# time.sleep(10)
-# try:
-#     click(u)
-# except:
-#     pass
 aumphers = {}
 aumphers[thai_province] = list_aumphers(thai_province)
 print('aumphers',aumphers)
 
-with open(f'../data/{province}_led.json', 'r') as openfile:
-    data = json.load(openfile)
+
+with open(f"../data/{province}_led.json", 'r') as json_file:
+    data = json.load(json_file)
+
 try:
-    with open(f'../data/{province}_gps_data.json', 'r') as openfile:
-        gps_data = json.load(openfile)
+    df = pd.read_csv(f"../data/{province}_gps.csv")
+    df['deed'] = df['deed'].astype(str)
+    exist_gps = list(df['deed'])
 except:
-    gps_data = {}
-exist_gps = gps_data.keys()
-# data
+    exist_gps = []
 
-line_noti(TOKEN_GROUP_ALL,f'All deed ---> {len(list(data.keys()))}')
+print('exist_gps',len(exist_gps),exist_gps)
 
-for i,k in enumerate(data.keys()):
-    if i%30 == 0:
-        line_noti(TOKEN_GROUP_ALL,f'Progress findGPS -->{i}/{len(list(data.keys()))}')
 
-    if 'deed_number' in data[k].keys():
-        deed = data[k]['deed_number'].split(',')
-        deed = [x.strip('-') for x in deed]
-        print('\n\n\n',deed,type(deed))
-        # extrack range deed number
-        X = []
-        for x in deed:
-            if '-' in x:
-                a = int(x.split('-')[0])
-                b = int(x.split('-')[1])
-                X += list(range(a,b+1))
-                # print(list(range(a,b+1)))
+no_gps = []
+for l in data.keys():
+    if l != 'null':
+        d = link2deed(l)
+
+        print(d,data[l]['aumper'],data[l]['province'])
+        print('nooooo',d)
+        if not set(d).intersection(set(exist_gps)):
+            ag = {'thai_province':data[l]['province'],'aumper':data[l]['aumper'],'d':d}
+            no_gps.append(ag)
+print(no_gps)
+print('nogps',len(no_gps))
+
+for x in no_gps:
+    print(x['thai_province'],x['aumper'],x['d'])
+    for dd in x['d']:
+        a = find_gps(x['thai_province'],x['aumper'],dd)
+        if a:
+            # try:
+            #     with open(f'../data/{province}_gps_data.json', 'r') as openfile:
+            #         gps_data = json.load(openfile)
+            # except:
+            #     gps_data = {}
+
+            a['deed'] = str(dd)
+            print('='*20)
+            # print(x['d'])
+            print(a)
+
+            # try:
+            file_path = f"../data/{province}_gps.csv"
+            if os.path.exists(file_path):
+                df = pd.read_csv(file_path)
+                print(df.shape)
+                df.loc[len(df)] = a
+                df.to_csv(file_path, index=False)
             else:
-                X.append(x)
-        deed = X
+                df = pd.DataFrame([a])
+                df.to_csv(file_path, index=False)
 
-        print(deed,type(deed))
-        for d in deed:
-            print(d)
-            if d in exist_gps:
-                print('exist gps')
-            else:
-    #             print('not exist gps',province,d,data[p]['data']['aumper'])
-                thai_province = data[k]['province'].strip()
-                aumper = data[k]['aumper']
-                print(d,'thai_province',thai_province,'aumper',aumper)
-                a = find_gps(thai_province,aumper,d)
-                if a:
-                    line_noti(TOKEN_GROUP_ALL,f'find GPS from website,{a}')
-                    print(f'find GPS from website,{a}')
-                    gps_data[str(d)] = a
-                    with open(f"../data/{province}_gps_data.json", "w") as outfile:
-                        outfile.write(json.dumps(gps_data, indent=4))
-                else:
-                    print('Not find gps from website',a)
-                    line_noti(TOKEN_GROUP_ALL,f'Not find gps from website,{a}')
-    else:
-        line_noti(TOKEN_GROUP_ALL,f'Not have deed number {k}')
+            # print(len(gps_data.keys()))
+
+            # # line_noti(TOKEN_GROUP_ALL,f'find GPS from website,{a}')
+            # print(f'find GPS from website,{a}')
+            # gps_data[str(d)] = a
+            # with open(f"../data/{province}_gps_data.json", "w") as outfile:
+            #     outfile.write(json.dumps(gps_data, indent=4))
+        else:
+            print('Not find gps from website',a)
+            # line_noti(TOKEN_GROUP_ALL,f'Not find gps from website,{a}')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# print('exist_gps',len(exist_gps))
+# print('current_gps',len(current_gps))
+# no_gps = set(current_gps)-set(exist_gps)
+# no_gps = [str(x) for x in no_gps]
+# no_gps = [x.split(' ')[0] for x in no_gps]
+# no_gps = [x.split('(')[0] for x in no_gps]
+# no_gps = [re.sub(r"\D", "", x) for x in no_gps]
+
+# print(no_gps)
+# print('no_gps',len(no_gps))
+
+# for x in 
+
+
+
+#             print(d)
+#             if d in exist_gps:
+#                 print('exist gps')
+#             else:
+#     #             print('not exist gps',province,d,data[p]['data']['aumper'])
+#                 thai_province = data[k]['province'].strip()
+#                 aumper = data[k]['aumper']
+#                 print(d,'thai_province',thai_province,'aumper',aumper)
+#                 a = find_gps(thai_province,aumper,d)
+#                 if a:
+#                     try:
+#                         with open(f'../data/{province}_gps_data.json', 'r') as openfile:
+#                             gps_data = json.load(openfile)
+#                     except:
+#                         gps_data = {}
+
+#                     print('='*20)
+#                     print(len(gps_data.keys()))
+
+#                     # line_noti(TOKEN_GROUP_ALL,f'find GPS from website,{a}')
+#                     print(f'find GPS from website,{a}')
+#                     gps_data[str(d)] = a
+#                     with open(f"../data/{province}_gps_data.json", "w") as outfile:
+#                         outfile.write(json.dumps(gps_data, indent=4))
+#                 else:
+#                     print('Not find gps from website',a)
+#                     # line_noti(TOKEN_GROUP_ALL,f'Not find gps from website,{a}')
+#     else:
+#         # line_noti(TOKEN_GROUP_ALL,f'Not have deed number {k}')
+#         pass
 
         
-line_noti(TOKEN_GROUP_ALL,f'Finish process2')
+# line_noti(TOKEN_GROUP_ALL,f'Finish process2')

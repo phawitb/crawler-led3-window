@@ -5,6 +5,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.service import Service
+# from selenium import webdriver
+from chromedriver_py import binary_path # This will get you the path variable
 import time
 from datetime import datetime
 import json
@@ -14,6 +16,8 @@ import configure
 import sys
 import csv
 import requests
+# from github import Github
+import pandas as pd
 
 time.sleep(10)
 
@@ -22,6 +26,51 @@ TOKEN_GROUP_ALL = '1hZqXJ1UwUlSD2eIIMjnobPb5PkoQIKT70Y0IR5SAzt'
 with open('../data/stage.csv', 'w', newline='') as file:
     writer = csv.writer(file)
     writer.writerow(['False'])
+
+# def upload_file_to_github(file_path, repo_name, file_name, branch_name, github_token):
+#     g = Github(github_token)
+#     repo = g.get_repo(repo_name)
+
+#     try:
+#         existing_file = repo.get_contents(file_name, ref=branch_name)
+#         file_exists = True
+#         sha = existing_file.sha
+#     except:
+#         file_exists = False
+
+#     with open(file_path, 'rb') as file:
+#         content = file.read()
+
+#     if file_exists:
+#         repo.update_file(file_name, f'Update {file_name}', content, sha, branch_name)
+#         print(f'Successfully updated {file_name} in {repo_name}/{branch_name}')
+#     else:
+#         repo.create_file(file_name, f'Add {file_name}', content, branch_name)
+#         print(f'Successfully uploaded {file_name} to {repo_name}/{branch_name}')
+
+
+def currentstatus2csv(file_path,province,total,isgps):
+    current_date = datetime.now().date()
+    if os.path.exists(file_path):
+        df = pd.read_csv(file_path)
+    else:
+        df = pd.DataFrame(columns=['province', 'date','total','isgps'])
+
+    df2 = df[(df['province']==province) & (df['date']==str(current_date))]
+
+    if df2.shape[0] > 0:
+        index  = df2.index[0]
+        if total == -1:
+            total = df.iloc[index]['total']
+        elif isgps == -1:
+            isgps = df.iloc[index]['isgps']
+
+        df.iloc[index] = [province, str(current_date),total,isgps]
+
+    else:
+        new_row = {'province': province, 'date': current_date, 'total': total,'isgps':isgps}
+        df = df.append(new_row, ignore_index=True)
+    df.to_csv('../data/currentstatus.csv', index=False) 
 
 def line_noti(token,msg):
     url = 'https://notify-api.line.me/api/notify'
@@ -198,7 +247,11 @@ if chrome_headless:
     options.add_argument("headless")
 options.add_argument('window-size=800x600')
 # driver = webdriver.Chrome(ChromeDriverManager(version=configure.chrome_version).install(),chrome_options=options)   #-----------------
-driver = webdriver.Chrome(service=Service(executable_path="chromedriver"), options=options)
+# driver = webdriver.Chrome(service=Service(executable_path="chromedriver"), options=options)
+
+svc = webdriver.ChromeService(executable_path=binary_path)
+driver = webdriver.Chrome(service=svc, options=options)
+
 
 driver.maximize_window()
 print('driver.get_window_size()',driver.get_window_size())
@@ -237,7 +290,9 @@ u = '/html/body/table[3]/tbody/tr/td[1]/table[2]/tbody/tr/td[2]/div'
 page = WebDriverWait(driver, 15).until(EC.presence_of_element_located((By.XPATH, u)))
 page = get_text(u)
 current_page,max_page = [int(x) for x in page.split()[-1].split('/')]
+total_propertys = int(get_text('/html/body/table[3]/tbody/tr/td[1]/table[2]/tbody/tr/td[2]/div/font'))
 print('(current_page,max_page)',current_page,max_page)
+print('total_propertys',total_propertys)
 
 CRAWLED = {}
 for i in range(1,max_page+1):
@@ -267,7 +322,8 @@ for p in range(1,max_page+1):
         total_page = int(page.split()[2])
         print(f"\n\n\ncurrent_page {current_page}/max_page {max_page}")
 
-        line_noti(TOKEN_GROUP_ALL,f'current_page {current_page}/max_page {max_page}')
+        if current_page%10 == 0:
+            line_noti(TOKEN_GROUP_ALL,f'current_page {current_page}/max_page {max_page}')
 
         scrolling_down(5)
 
@@ -275,7 +331,7 @@ for p in range(1,max_page+1):
             if r not in CRAWLED[p] or NEW_DATE:
                 try:
 
-                    print(r,'/',p,'-'*20,C[dtn][f'{r}/{p}'])
+                    # print(r,'/',p,'-'*20,C[dtn][f'{r}/{p}'])
                     #read exist data
                     try:
                         with open(f'../data/{province}_led.json', 'r') as openfile:
@@ -324,7 +380,7 @@ for p in range(1,max_page+1):
                     #     outfile.write(json.dumps(C, indent=4))
 
                     print(f'Error : row:{r}/page:{current_page}')
-                    line_noti(TOKEN_GROUP_ALL,f'Error : row:{r}/page:{current_page}')
+                    # line_noti(TOKEN_GROUP_ALL,f'Error : row:{r}/page:{current_page}')
                     driver.switch_to.window(driver.window_handles[0])
 
             else:
@@ -345,6 +401,11 @@ if len(list(C[dtn].keys())) > (int(max_page)-1)*40:
         writer = csv.writer(file)
         writer.writerow(['True'])
         line_noti(TOKEN_GROUP_ALL,f'Write complate stage= True crawler_data={len(list(C[dtn].keys()))} from total={total_page}')
+
+    #update current stage
+    file_path = '../data/currentstatus.csv'
+    currentstatus2csv(file_path,province,total_propertys,-1)
+
 else:
     print('nnnn')
     with open('../data/stage.csv', 'w', newline='') as file:
